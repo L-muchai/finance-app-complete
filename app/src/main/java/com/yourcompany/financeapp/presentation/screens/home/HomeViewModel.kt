@@ -2,6 +2,7 @@ package com.yourcompany.financeapp.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yourcompany.financeapp.data.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -14,36 +15,43 @@ data class HomeUiState(
     val totalExpenses: Double = 0.0,
     val todayExpenses: Double = 0.0,
     val weeklyExpenses: Double = 0.0,
+    val transactionCount: Int = 0,
     val error: String? = null
 )
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val repository: TransactionRepository
+) : ViewModel() {
     
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     
     init {
-        loadInitialData()
+        loadData()
     }
     
-    private fun loadInitialData() {
+    private fun loadData() {
         viewModelScope.launch {
             try {
-                // Simulate loading
-                _uiState.update { it.copy(isLoading = true) }
+                _uiState.update { it.copy(isLoading = true, error = null) }
                 
-                // Mock data for now - will replace with real database calls
-                delay(1000)
+                // Load data in parallel
+                val income = repository.getTotalIncome()
+                val expenses = repository.getTotalExpenses()
+                val todayExpenses = repository.getTodayExpenses()
+                val weeklyExpenses = repository.getWeeklyExpenses()
+                val count = repository.getTransactionCount()
                 
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        totalBalance = 12543.75,
-                        totalIncome = 20000.00,
-                        totalExpenses = 7456.25,
-                        todayExpenses = 245.50,
-                        weeklyExpenses = 1567.80
+                        totalIncome = income,
+                        totalExpenses = expenses,
+                        totalBalance = income - expenses,
+                        todayExpenses = todayExpenses,
+                        weeklyExpenses = weeklyExpenses,
+                        transactionCount = count
                     )
                 }
             } catch (e: Exception) {
@@ -58,11 +66,48 @@ class HomeViewModel @Inject constructor() : ViewModel() {
     }
     
     fun refreshData() {
-        loadInitialData()
+        loadData()
     }
     
-    // Helper function for testing
-    private suspend fun delay(timeMillis: Long) {
-        kotlinx.coroutines.delay(timeMillis)
+    suspend fun addSampleData() {
+        // Add sample transactions for testing
+        val sampleTransactions = listOf(
+            TransactionEntity(
+                amount = 2500.00,
+                type = TransactionEntity.TYPE_INCOME,
+                category = "Salary",
+                notes = "Monthly salary"
+            ),
+            TransactionEntity(
+                amount = 1200.00,
+                type = TransactionEntity.TYPE_INCOME,
+                category = "Freelance",
+                notes = "Web development project"
+            ),
+            TransactionEntity(
+                amount = 850.00,
+                type = TransactionEntity.TYPE_EXPENSE,
+                category = "Rent",
+                notes = "Monthly rent payment"
+            ),
+            TransactionEntity(
+                amount = 320.50,
+                type = TransactionEntity.TYPE_EXPENSE,
+                category = "Groceries",
+                notes = "Weekly groceries"
+            ),
+            TransactionEntity(
+                amount = 45.75,
+                type = TransactionEntity.TYPE_EXPENSE,
+                category = "Transport",
+                notes = "Fuel and parking"
+            )
+        )
+        
+        sampleTransactions.forEach { transaction ->
+            repository.insertTransaction(transaction)
+        }
+        
+        refreshData()
     }
 }
