@@ -16,24 +16,36 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onAddTransactionClick: () -> Unit,
+    onViewTransactionsClick: () -> Unit = {},
+    onViewBudgetsClick: () -> Unit = {},
+    onViewReportsClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("💰 Finance Tracker") }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* Add transaction */ },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+       topBar = {
+    TopAppBar(
+        title = { Text("💰 Finance Tracker") },
+        actions = {
+            IconButton(onClick = { viewModel.refreshData() }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+            }
+            IconButton(onClick = { /* Open menu */ }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More")
             }
         }
+    )
+}
+       floatingActionButton = {
+    FloatingActionButton(
+        onClick = onAddTransactionClick,  // Changed this
+        containerColor = MaterialTheme.colorScheme.primary
+    ) {
+        Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+    }
+} 
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
