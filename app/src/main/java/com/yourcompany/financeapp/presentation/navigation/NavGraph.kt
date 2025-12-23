@@ -25,50 +25,94 @@ sealed class Screen(val route: String) {
     object Reports : Screen("reports")
     object Settings : Screen("settings")
 }
-
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Home.route
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
+    Scaffold(
+        bottomBar = {
+            FinanceBottomNavigation(navController = navController)
+        }
+    ) { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.padding(paddingValues)
+        ) {
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    onAddTransactionClick = {
+                        navController.navigate(Screen.AddTransaction.route)
+                    },
+                    onViewTransactionsClick = {
+                        navController.navigate(Screen.Transactions.route)
+                    },
+                    onViewBudgetsClick = {
+                        navController.navigate(Screen.Budgets.route)
+                    },
+                    onViewReportsClick = {
+                        navController.navigate(Screen.Reports.route)
+                    }
+                )
+            }
+            
+            composable(Screen.AddTransaction.route) {
+                AddTransactionScreen(navController = navController)
+            }
+            
+            composable(Screen.Transactions.route) {
+                TransactionsScreen(navController = navController)
+            }
+            
+            composable(
+                route = Screen.TransactionDetail.route,
+                arguments = listOf(navArgument("id") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getLong("id") ?: 0L
+                TransactionDetailScreen(
+                    transactionId = transactionId,
+                    navController = navController
+                )
+            }
+            
+            // Placeholder screens
+            composable(Screen.Budgets.route) {
+                PlaceholderScreen(title = "Budgets", navController = navController)
+            }
+            
+            composable(Screen.Reports.route) {
+                PlaceholderScreen(title = "Reports", navController = navController)
+            }
+            
+            composable(Screen.Settings.route) {
+                PlaceholderScreen(title = "Settings", navController = navController)
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaceholderScreen(
+    title: String,
+    navController: androidx.navigation.NavController? = null
+) {
+    Column(
+        modifier = androidx.compose.ui.Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
     ) {
-        composable(Screen.Home.route) {
-            HomeScreen(
-                onAddTransactionClick = {
-                    navController.navigate(Screen.AddTransaction.route)
-                },
-                onViewTransactionsClick = {
-                    navController.navigate(Screen.Transactions.route)
-                },
-                onViewBudgetsClick = {
-                    navController.navigate(Screen.Budgets.route)
-                },
-                onViewReportsClick = {
-                    navController.navigate(Screen.Reports.route)
-                }
-            )
-        }
-        
-        composable(Screen.AddTransaction.route) {
-            AddTransactionScreen(navController = navController)
-        }
-        
-        // We'll add other screens later
-        composable(Screen.Transactions.route) {
-            // Placeholder for TransactionsScreen
-            AddTransactionScreen(navController = navController)
-        }
-        
-        composable(
-            route = Screen.TransactionDetail.route,
-            arguments = listOf(navArgument("id") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val transactionId = backStackEntry.arguments?.getLong("id") ?: 0L
-            // Placeholder for TransactionDetailScreen
-            AddTransactionScreen(navController = navController)
+        androidx.compose.material3.Text(
+            text = "$title Screen",
+            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+        )
+        androidx.compose.ui.Modifier.height(16.dp)
+        androidx.compose.material3.Button(
+            onClick = { navController?.popBackStack() }
+        ) {
+            androidx.compose.material3.Text("Go Back")
         }
     }
 }
